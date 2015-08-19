@@ -1,0 +1,23 @@
+#!/bin/bash
+
+keys="${@:1:${#}-1}"
+usblink="${@: -1}"
+
+if [ -L $usblink ] && [ $# != 0 ]; then
+
+    usbbus=`udevadm info -a -n $usblink | awk -F== '/ATTR{busnum}/ { gsub(/"/,"",$2);print $2 }'`
+    usbaddr=`udevadm info -a -n $usblink | awk -F== '/ATTR{devnum}/ { gsub(/"/,"",$2);print $2 }'`
+
+    if [ "$usbbus" != "" ] && [ "$usbaddr" != "" ]; then
+        usbredirserver $keys $usbbus-$usbaddr
+    else
+        echo "This is not usb device"
+        exit 1
+    fi
+
+else
+
+    echo "Usage: usbredirserver-by-symlink [-p|--port <port>] [-v|--verbose <0-5>] /dev/usbdevice"
+    exit 1
+
+fi
