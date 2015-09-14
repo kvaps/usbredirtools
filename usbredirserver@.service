@@ -1,0 +1,14 @@
+[Unit]
+Description=usbredirserver
+
+[Service]
+Restart=always
+EnvironmentFile=/var/lib/usbredirserver/%i
+
+ExecStart=/usr/bin/usbredirserver -p %i ${BUS}-${DEV}
+
+ExecStop=/bin/bash -c 'fuser -k ${PORT}/tcp'
+
+[Install]
+WantedBy=multi-user.target
+
