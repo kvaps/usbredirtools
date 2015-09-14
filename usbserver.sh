@@ -1,10 +1,18 @@
 #!/bin/bash
 port=$1
 busdev=$2
+pidfile=/var/run/usb-${port}.pid
 
-fuser -k $port/tcp
+KILL(){
+    fuser -k $port/tcp
+}
 
-RUN=$(until $(usbredirserver -p $port $busdev); do $RUN; done)
+RUN(){
+    until $(usbredirserver -p $port $busdev); do RUN; done
+}
 
-echo $! > /var/run/usb-${port}.pid
+echo $$ > $pidfile
+trap '{ rm -f $pidfile; KILL; exit 0; }' EXIT
+
+KILL
 RUN
