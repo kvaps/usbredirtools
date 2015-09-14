@@ -3,16 +3,23 @@ port=$1
 busdev=$2
 pidfile=/var/run/usb-${port}.pid
 
-KILL(){
+STOP(){
     fuser -k $port/tcp
 }
 
-RUN(){
-    until $(usbredirserver -p $port $busdev); do RUN; done
+CLEAN(){
+    if [ -f $pidfile ]; then
+        kill $(cat $pidfile)
+    fi
 }
 
-echo $$ > $pidfile
-trap '{ rm -f $pidfile; KILL; exit 0; }' EXIT
+START(){
+    echo $$ > $pidfile
+    until $(usbredirserver -p $port $busdev); do START; done
+}
 
-KILL
-RUN
+trap '{ STOP; rm -f $pidfile; exit 0; }' EXIT
+
+CLEAN
+STOP
+START
