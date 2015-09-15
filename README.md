@@ -1,5 +1,6 @@
 usbredirtools
 =============
+These scripts help you passthrough many identical usb-devices (with the same vendorid:productid pair) for selected virtual machines, using [usbredir](http://www.spice-space.org/page/UsbRedir) protocol in daemon mode, without using spice.
 
 ### USB Server install
   - `curl -o /etc/systemd/system/usbredirserver\@.service https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbredirserver%40.service`
