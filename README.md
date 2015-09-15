@@ -1,8 +1,7 @@
 usbredirtools
 =============
 
-Server install
---------------
+### USB Server install
 ```
 # curl -o /etc/systemd/system/usbredirserver\@.service https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbredirserver%40.service
 # mkdir /var/lib/usbredirserver/
@@ -12,8 +11,7 @@ Server install
 ACTION=="add", ATTR{serial}=="11C130317234004B", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{busnum}\\nDEV=$attr{devnum} > /var/lib/usbredirserver/$PORT; systemctl restart usbredirserver@$PORT'"
 ```
 
-Hypervisor install
-------------------
+### Hypervisor install (proxmox)
 sudo and expect packages is required.
 ```
 # curl -o /bin/usbreconnect.sh https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbreconnect.sh
@@ -39,8 +37,7 @@ sudo and expect packages is required.
 
 ```
 
-Windows-client install
-----------------------
+### Windows-client install
 
   - create file: usbreconnect.bat
 ```
