@@ -1,5 +1,5 @@
 #!/bin/bash
-USER=$(whoami)
+USER=$SUDO_USER
 VMID=$1
 CONF=/etc/usbredirclient.conf
 

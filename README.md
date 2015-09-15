@@ -14,6 +14,7 @@ ACTION=="add", ATTR{serial}=="11C130317234004B", RUN+="/bin/bash -c 'PORT=4000; 
 
 Hypervisor install
 ------------------
+sudo and expect packages is required.
 ```
 # curl -o /bin/usbreconnect.sh https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbreconnect.sh
 # chmod +x /bin/usbreconnect.sh 
