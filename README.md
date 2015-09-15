@@ -32,7 +32,7 @@ sudo and expect packages is required.
 [usbtest]
 100 = 192.168.100.95:4000
 #100 = 192.168.100.95:4001
-#[root]
+#[anotheruser]
 #101 = 192.168.100.95:4002
 
 ```
@@ -43,4 +43,6 @@ sudo and expect packages is required.
 ```
 plink.exe usbuser@192.168.100.220 -pw PASSWORD /usr/bin/sudo /bin/usbreconnect.sh 100
 ```
-You can set no vmid as argument, then all devices will be reconnected for this user.
+*You can set no vmid as argument, then all devices will be reconnected for this user.*
+
+**Using ssh-keys is true way!**
