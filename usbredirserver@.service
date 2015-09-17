@@ -5,7 +5,7 @@ Description=usbredirserver
 Restart=always
 EnvironmentFile=/var/lib/usbredirserver/%i
 
-ExecStart=/usr/bin/usbredirserver -p %i ${BUS}-${DEV}
+ExecStart=/usr/sbin/usbredirserver -p %i ${BUS}-${DEV}
 
 ExecStop=/bin/bash -c 'fuser -k ${PORT}/tcp'
 
