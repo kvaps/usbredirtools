@@ -26,15 +26,15 @@ for i in $TOKENS; do
     RUN=$(
     expect << EOF
 spawn /usr/sbin/qm monitor ${VMID}
-send "device_del usbredirdev${number}\r";
-send "chardev-remove usbredirchardev${number}\r";
-send "chardev-add socket,id=usbredirchardev${newnumber},port=${PORT},host=${HOST}\r";
-send "device_add usb-redir,chardev=usbredirchardev${newnumber},id=usbredirdev${newnumber},bus=ehci.0,debug=4\r";
+send "device_del usbredirdev${HOST}-${PORT}-${number}\r";
+send "chardev-remove usbredirchardev${HOST}-${PORT}-${number}\r";
+send "chardev-add socket,id=usbredirchardev${HOST}-${PORT}-${newnumber},port=${PORT},host=${HOST}\r";
+send "device_add usb-redir,chardev=usbredirchardev${HOST}-${PORT}-${newnumber},id=usbredirdev${HOST}-${PORT}-${newnumber},bus=ehci.0,debug=4\r";
 send "quit\r"; expect eof
 EOF
     )
 
-#echo "$RUN"
-echo "$RUN" | grep 'Failed\|no such VM' && exit 1
+echo "$RUN"
+#echo "$RUN" | grep 'Failed\|no such VM' && exit 1
 
 done
