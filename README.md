@@ -32,7 +32,6 @@ ACTION=="add", KERNEL=="3-2", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{b
   - `mkdir /var/lib/usbredirclient/`
   - `groupadd usbredir`
   - `useradd usbuser -m -d /home/usbuser -g usbredir`
-  - `passwd usbuser`
   - `visudo`
 ```
 %usbredir ALL = NOPASSWD: /bin/usbreconnect.sh
@@ -40,10 +39,10 @@ ACTION=="add", KERNEL=="3-2", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{b
   - `vim /etc/usbredirclient.conf`
 ```
 [usbtest]
-100 = 192.168.100.95:4000
-#100 = 192.168.100.95:4001
+100=usbredirserver:4000
+#100=usbredirserver:4001
 #[anotheruser]
-#101 = 192.168.100.95:4002
+#101=usbredirserver:4002
 
 ```
 
@@ -53,10 +52,17 @@ ACTION=="add", KERNEL=="3-2", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{b
 
 ### Windows-client install
 
-  - create file: usbreconnect.bat
+  - Download [plink.exe](http://the.earth.li/~sgtatham/putty/0.65/x86/plink.exe), and save it to C:\ssh\plink.exe
+  - Download [puttygen.exe](http://the.earth.li/~sgtatham/putty/0.65/x86/puttygen.exe), and run it
+  - Press Generate and save Private Key to C:\ssh\key.ppk
+  - Copy Public Key and run  in Hypervisor:
+```bash
+echo 'long_line_with_contents_of_public_key' >> .ssh/authorized_keys
 ```
-plink.exe usbuser@192.168.100.220 -pw PASSWORD /usr/bin/sudo /bin/usbreconnect.sh 100
+  - Create file: C:\ssh\usbreconnect.bat 
+```bash
+plink.exe usbuser@192.168.100.220 -i key.ppk /usr/bin/sudo /bin/usbreconnect.sh 100
 ```
 *You can set no vmid as argument, then all devices will be reconnected for this user.*
+  - Create shourcats for usbreconnect.bat in User's Desktop and Autorun folders as desired
 
-**Using ssh-keys is true way!**
