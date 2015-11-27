@@ -1,0 +1,25 @@
+usb-alpha:
+  ebanystidbank:
+    vmid: 102
+    vlan: 333
+    tokens:
+      - 192.168.100.75:111
+      - 192.168.100.75:222
+  banksupertruper:
+    vmid: 100
+    vlan: 992
+    tokens:
+      - 192.168.100.75:123
+      - 192.168.100.75:1266
+  ponchikonline:
+    vmid: 100
+    vlan: 999
+    tokens:
+      - 192.168.100.75:123
+usb-beta:
+  kakashabank:
+    vmid: 100
+    vlan: 999
+    tokens:
+      - 192.168.100.75:101
+      - 192.168.100.75:102
