@@ -6,10 +6,10 @@ import logging
 import argparse
 
 
-parser = argparse.ArgumentParser(description='usbrat (USBRedirATtach) utility - Sends commands for attach usbgroup and dettach it when exit to usbrat server.')
+parser = argparse.ArgumentParser(description='usbrat tool (USBRedir ATtach) - Send commands for attach usbgroup and dettach it when exit to usbrat server.')
 
 parser.add_argument('-H', '--host', help='Hostname of usbrat server', required=True)
-parser.add_argument('-p', '--port', help='Description for foo argument')
+parser.add_argument('-p', '--port', help='Port of usbrat server')
 parser.add_argument('-u', '--user', help='Your username on usbrat server', required=True)
 parser.add_argument('-A', '--attach', help='Attach and exit', action='store_true')
 parser.add_argument('-D', '--detach', help='Detach and exit', action='store_true')
