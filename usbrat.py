@@ -1,27 +1,24 @@
 #!/usr/bin/python
 
-import os
-import yaml
 import signal
 import sys
 import logging
+import argparse
 
-logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = u'usbrat.log')
+parser = argparse.ArgumentParser(description='usbrat (USBRedirATtach) utility - Sends commands for attach usbgroup and dettach it when exit to usbrat server.')
 
-with open("usbrat.yml", 'r') as stream:
-    conf = yaml.load(stream)
+parser.add_argument('user@hostname', help='Username and hostname of usbrat server')
+parser.add_argument('usbgroup', help='Name of usbgroup')
+parser.add_argument('-p','--port', help='Description for foo argument')
+parser.add_argument('-a','--attach', help='Attach and exit', action='store_true')
+parser.add_argument('-d','--detach', help='Detach and exit', action='store_true')
+
+options=vars(parser.parse_args())
 
 def attach_tokens():
     logging.info( u'Attaching tokens' )
-    for user in conf:
-        print("======= " + user + " =======")
-        for usbgroup in conf[user]:
-            print("= " + usbgroup +" =")
-            print(conf[user][usbgroup]['vmid'])
-            print(conf[user][usbgroup]['vlan'])
-            for token in conf[user][usbgroup]['tokens']:
-                print("- " + token)
-
+    signal.signal(signal.SIGINT, int_signal_handler)
+    signal.signal(signal.SIGHUP, hup_signal_handler)
 
 def detach_tokens():
     logging.info( u'Detaching tokens' )
@@ -35,8 +32,6 @@ def hup_signal_handler(signal, frame):
     logging.debug( u'HUP signal received' )
     detach_tokens()
 
-signal.signal(signal.SIGINT, int_signal_handler)
-signal.signal(signal.SIGHUP, hup_signal_handler)
-
-attach_tokens()
-signal.pause()
+#attach_tokens()
+print(options)
+print(options['user@hostname'])
