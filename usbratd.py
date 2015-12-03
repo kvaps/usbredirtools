@@ -32,7 +32,7 @@ with open("usbrat.yml", 'r') as stream:
 def set_socket():
     sock = socket.socket()
     sock.bind((options.addr, options.port))
-    
+
     while True:
         sock.listen(1)
         conn, addr = sock.accept()
@@ -44,7 +44,6 @@ def set_socket():
         action, user, usbgroup = data.split(':',2)
         exec_usbgroup(action, user, usbgroup)
         
-
         logging.debug( u'Closing ' + str(addr) )
         conn.close()
 
@@ -61,24 +60,22 @@ def exec_usbgroup(action, req_user, req_usbgroup):
                 if usbgroup == req_usbgroup:
                     usbgroup_found = True
                     if action == 'A':
-                        attach_tokens(user, usbgroup)
+                        attach_usbgroup(user, usbgroup)
                     elif action == 'D':
-                        detach_tokens(user, usbgroup)
+                        detach_usbgroup(user, usbgroup)
     if user_found == False:
         logging.info( u'No user found: ' + req_user )
     if usbgroup_found == False:
         logging.info( u'No usbgroup found for ' +req_user + ': ' + req_usbgroup )
             
-    
-
-def attach_tokens(user, usbgroup):
+def attach_usbgroup(user, usbgroup):
     print( u'vmid = ', conf[user][usbgroup]['vmid'])
     print( u'vlan = ', conf[user][usbgroup]['vlan'])
     print( u'tokens:' )
     for token in conf[user][usbgroup]['tokens']:
         print("- " + token)
  
-def detach_tokens(user, usbgroup):
+def detach_usbgroup(user, usbgroup):
 
     logging.info( u'Detaching tokens' )
 

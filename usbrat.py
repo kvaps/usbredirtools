@@ -31,12 +31,12 @@ def set_logging():
        root_logger.setLevel('INFO')
     
 
-def attach_tokens():
+def attach_usbgroup():
     logging.info( u'Attaching ' + options.usbgroup + ', for ' + options.user )
     data = bytes(u'A:' + options.user + ':' + options.usbgroup , 'utf-8')
     send_server(data)
 
-def detach_tokens():
+def detach_usbgroup():
     logging.info( u'Detaching ' + options.usbgroup + ', for ' + options.user )
     data = bytes(u'D:' + options.user + ':' + options.usbgroup , 'utf-8')
     send_server(data)
@@ -45,11 +45,11 @@ def detach_tokens():
 
 def int_signal_handler(signal, frame):
     logging.debug( u'INT signal received' )
-    detach_tokens()
+    detach_usbgroup()
 
 def hup_signal_handler(signal, frame):
     logging.debug( u'HUP signal received' )
-    detach_tokens()
+    detach_usbgroup()
 
 def send_server(data):
     sock = socket.socket()
@@ -66,14 +66,14 @@ set_logging()
 logging.debug( u'Program started' )
 
 if options.attach:
-    attach_tokens()
+    attach_usbgroup()
     exit(0)
 
 if options.detach:
-    detach_tokens()
+    detach_usbgroup()
     exit(0)
 
-attach_tokens()
+attach_usbgroup()
 signal.signal(signal.SIGINT, int_signal_handler)
 signal.signal(signal.SIGHUP, hup_signal_handler)
 signal.pause()
