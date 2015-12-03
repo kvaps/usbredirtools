@@ -33,12 +33,12 @@ def set_logging():
 
 def attach_tokens():
     logging.info( u'Attaching ' + options.usbgroup + ', for ' + options.user )
-    data = bytes(u'A:' + options.usbgroup + u':' + options.user, 'utf-8')
+    data = bytes(u'A:' + options.user + ':' + options.usbgroup , 'utf-8')
     send_server(data)
 
 def detach_tokens():
     logging.info( u'Detaching ' + options.usbgroup + ', for ' + options.user )
-    data = bytes(u'D:' + options.usbgroup + u':' + options.user, 'utf-8')
+    data = bytes(u'D:' + options.user + ':' + options.usbgroup , 'utf-8')
     send_server(data)
     logging.debug( u'Program exited' )
     sys.exit(0)
