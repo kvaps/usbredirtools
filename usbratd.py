@@ -38,31 +38,36 @@ def set_socket():
         conn, addr = sock.accept()
         logging.info( u'Connected ' + str(addr) )
         data = conn.recv(1024)
-    
-        logging.debug( u'Received ' + data.decode("utf-8"))
+        data = data.decode("utf-8")
 
-        conn.send(b'Success!')
-        #conn.send(b'Failed!')
+        logging.debug( u'Received ' + data )
+        action, user, usbgroup = data.split(':',2)
+        
+        if action == 'A':
+            attach_tokens()
+        elif action == 'D':
+            detach_tokens()
+
+        logging.debug( u'Closing ' + str(addr) )
         conn.close()
 
+
+def attach_tokens():
+    logging.info( u'Attaching tokens' )
+    for user in conf:
+        print("======= " + user + " =======")
+        for usbgroup in conf[user]:
+            print("= " + usbgroup +" =")
+            print(conf[user][usbgroup]['vmid'])
+            print(conf[user][usbgroup]['vlan'])
+            for token in conf[user][usbgroup]['tokens']:
+                print("- " + token)
+
+
+def detach_tokens():
+    logging.info( u'Detaching tokens' )
+
+#attach_tokens()
 set_logging()
 set_socket()
 
-
-#def attach_tokens():
-#    logging.info( u'Attaching tokens' )
-#    for user in conf:
-#        print("======= " + user + " =======")
-#        for usbgroup in conf[user]:
-#            print("= " + usbgroup +" =")
-#            print(conf[user][usbgroup]['vmid'])
-#            print(conf[user][usbgroup]['vlan'])
-#            for token in conf[user][usbgroup]['tokens']:
-#                print("- " + token)
-#
-#
-#def detach_tokens():
-#    logging.info( u'Detaching tokens' )
-#    sys.exit(0)
-#
-#attach_tokens()
