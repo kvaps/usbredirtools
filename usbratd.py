@@ -12,21 +12,22 @@ parser = argparse.ArgumentParser(description=u'usbrat server (USBRedir ATtach) -
 parser.add_argument('-a', '--addr', help=u'Address to listen', default='')
 parser.add_argument('-p', '--port', help=u'Port to listen. Default to 4411.', type=int, default=4411)
 parser.add_argument('-v', '--verbose', help=u'Enable verbose logging', action='store_true')
-parser.add_argument('-l', '--logfile', help=u'Path to log file', default = None)
+parser.add_argument('-l', '--log', help=u'Path to log file', default = None)
+parser.add_argument('-c', '--config', help=u'Path to config. Default to usbrat.yml', default = u'usbrat.yml')
 
 options=parser.parse_args()
 
 def set_logging():
 
     root_logger = logging.getLogger()
-    logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', filename = options.logfile)
+    logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', filename = options.log)
 
     if options.verbose:
        root_logger.setLevel('DEBUG')
     else:
        root_logger.setLevel('INFO')
 
-with open("usbrat.yml", 'r') as stream:
+with open(options.config, 'r') as stream:
     conf = yaml.load(stream)
 
 def set_socket():
