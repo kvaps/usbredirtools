@@ -31,6 +31,7 @@ with open("usbrat.yml", 'r') as stream:
 
 def set_socket():
     sock = socket.socket()
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((options.addr, options.port))
 
     while True:
