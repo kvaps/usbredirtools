@@ -7,12 +7,12 @@ import logging
 import argparse
 import socket
 
-parser = argparse.ArgumentParser(description='usbrat server (USBRedir ATtach) - attach and detach requested usbgroups to vm\'s ')
+parser = argparse.ArgumentParser(description=u'usbrat server (USBRedir ATtach) - attach and detach requested usbgroups to vm\'s ')
 
-parser.add_argument('-a', '--addr', help='Address to listen', default='')
-parser.add_argument('-p', '--port', help='Port to listen. Default to 4411.', type=int, default=4411)
-parser.add_argument('-v', '--verbose', help='Enable verbose logging', action='store_true')
-parser.add_argument('-l', '--logfile', help='Path to log file', default = None)
+parser.add_argument('-a', '--addr', help=u'Address to listen', default='')
+parser.add_argument('-p', '--port', help=u'Port to listen. Default to 4411.', type=int, default=4411)
+parser.add_argument('-v', '--verbose', help=u'Enable verbose logging', action='store_true')
+parser.add_argument('-l', '--logfile', help=u'Path to log file', default = None)
 
 options=parser.parse_args()
 
@@ -29,20 +29,24 @@ def set_logging():
 with open("usbrat.yml", 'r') as stream:
     conf = yaml.load(stream)
 
+def set_socket():
+    sock = socket.socket()
+    sock.bind((options.addr, options.port))
+    
+    while True:
+        sock.listen(1)
+        conn, addr = sock.accept()
+        logging.info( u'Connected ' + str(addr) )
+        data = conn.recv(1024)
+    
+        logging.debug( u'Received ' + data.decode("utf-8"))
 
-sock = socket.socket()
-sock.bind((options.addr, options.port))
-sock.listen(5)
-conn, addr = sock.accept()
-print(u'Connected', addr)
+        conn.send(b'Hayushki!')
+        conn.close()
 
-while True:
-    data = conn.recv(1024)
+set_logging()
+set_socket()
 
-    if not data:
-        break
-    conn.send(data.upper())
-conn.close()
 
 #def attach_tokens():
 #    logging.info( u'Attaching tokens' )
