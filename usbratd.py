@@ -41,7 +41,8 @@ def set_socket():
     
         logging.debug( u'Received ' + data.decode("utf-8"))
 
-        conn.send(b'Hayushki!')
+        conn.send(b'Success!')
+        #conn.send(b'Failed!')
         conn.close()
 
 set_logging()
