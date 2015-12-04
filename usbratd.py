@@ -16,8 +16,7 @@ parser.add_argument('-p', '--port', help=u'Port to listen. Default to 4411.', ty
 parser.add_argument('-v', '--verbose', help=u'Enable verbose logging', action='store_true')
 parser.add_argument('-l', '--log', help=u'Path to log file', default = None)
 parser.add_argument('-c', '--config', help=u'Path to config. Default to usbratd.yml', default = u'usbratd.yml')
-
-options=parser.parse_args()
+parser.add_argument('-D', '--data', help=u'Path to the data folder. Default to /var/lib/usbrat', default = u'/var/lib/usbrat')
 
 def set_logging():
 
@@ -28,9 +27,6 @@ def set_logging():
        root_logger.setLevel('DEBUG')
     else:
        root_logger.setLevel('INFO')
-
-with open(options.config, 'r') as stream:
-    conf = yaml.load(stream)
 
 def set_socket():
     sock = socket.socket()
@@ -55,12 +51,14 @@ def set_socket():
 def check_usbgroup(user, usbgroup):
     logging.debug( u'Checking ' + usbgroup + ', for ' + user )
     
-    result = {'attached': None}
-    #result = {'attached': True, 'vmid': 123 }
+    usbs = conf['usbgroups'][user][usbgroup]['usb']
 
-    result = json.dumps(result)
-    
-    logging.debug( u'Checking result ' + usbgroup + ', for ' + user + ' ' + result)
+    for usb in usbs:
+        with open(options.data + '/usb/' + usb, 'r') as stream:
+            result = json.load(stream)
+
+    print(result)
+    #logging.debug( u'Checking result ' + usbgroup + ', for ' + user + ' ' + result)
     return
 
 def exec_usbgroup(data):
@@ -86,10 +84,6 @@ def exec_usbgroup(data):
     elif usbgroup_found == False:
             logging.info( u'No usbgroup found for ' +data['user'] + ': ' + data['usbgroup'] )
             
-def gen_name(usbgroup, usb):
-    short_uuid = str(uuid.uuid4())[:8]
-    return usbgroup + '_' + usb + '_' + short_uuid
-
 def attach_usbgroup(user, usbgroup):
 
     logging.info( u'Attaching ' + usbgroup + ', for ' + user )
@@ -101,12 +95,35 @@ def attach_usbgroup(user, usbgroup):
     logging.debug( u'Connecting to vmid: ' + str(vmid))
 
     for usb in usbs:
-        name=gen_name(usbgroup, usb)
-        logging.info( u'Attaching ' + usb + u' as ' + name)
+
+        chardev_name = usbgroup + '_' + usb + '_' + str(uuid.uuid4())[:8]
+        device_name = usbgroup + '_' + usb
+
+        # Write info about attached usb
+        with open(options.data + '/usb/' + usb, 'w') as stream:
+            stream.write(json.dumps({'vmid': vmid, 'chardev_name': chardev_name, 'device_name': device_name}))
+
+        logging.info( u'Attaching ' + usb + u' as ')
  
 def detach_usbgroup(user, usbgroup):
 
     logging.info( u'Detaching ' + usbgroup + ', for ' + user )
+
+    vmid = conf['usbgroups'][user][usbgroup]['vmid']
+    network = conf['usbgroups'][user][usbgroup]['network']
+    usbs = conf['usbgroups'][user][usbgroup]['usb']
+
+    for usb in usbs:
+        # Remove info about attached usb
+        os.remove(options.data + '/usb/' + usb)
+
+
+options=parser.parse_args()
+
+with open(options.config, 'r') as stream:
+    conf = yaml.load(stream)
+if not os.path.exists(options.data + '/usb'):
+    os.makedirs(options.data + '/usb')
 
 set_logging()
 set_socket()
