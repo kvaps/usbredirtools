@@ -13,7 +13,7 @@ parser.add_argument('-a', '--addr', help=u'Address to listen', default='')
 parser.add_argument('-p', '--port', help=u'Port to listen. Default to 4411.', type=int, default=4411)
 parser.add_argument('-v', '--verbose', help=u'Enable verbose logging', action='store_true')
 parser.add_argument('-l', '--log', help=u'Path to log file', default = None)
-parser.add_argument('-c', '--config', help=u'Path to config. Default to usbrat.yml', default = u'usbrat.yml')
+parser.add_argument('-c', '--config', help=u'Path to config. Default to usbratd.yml', default = u'usbratd.yml')
 
 options=parser.parse_args()
 
@@ -51,14 +51,13 @@ def set_socket():
 
 
 def exec_usbgroup(action, req_user, req_usbgroup):
-    logging.info( u'Attaching tokens' )
     user_found = False
     usbgroup_found = False
 
-    for user in conf:
+    for user in conf['usbgroups']:
         if user == req_user:
             user_found = True
-            for usbgroup in conf[user]:
+            for usbgroup in conf['usbgroups'][user]:
                 if usbgroup == req_usbgroup:
                     usbgroup_found = True
                     if action == 'A':
@@ -67,19 +66,20 @@ def exec_usbgroup(action, req_user, req_usbgroup):
                         detach_usbgroup(user, usbgroup)
     if user_found == False:
         logging.info( u'No user found: ' + req_user )
-    if usbgroup_found == False:
-        logging.info( u'No usbgroup found for ' +req_user + ': ' + req_usbgroup )
+    elif usbgroup_found == False:
+            logging.info( u'No usbgroup found for ' +req_user + ': ' + req_usbgroup )
             
 def attach_usbgroup(user, usbgroup):
-    print( u'vmid = ', conf[user][usbgroup]['vmid'])
-    print( u'vlan = ', conf[user][usbgroup]['vlan'])
-    print( u'tokens:' )
-    for token in conf[user][usbgroup]['tokens']:
-        print("- " + token)
+    logging.info( u'Attaching usbgroup' )
+    print( u'vmid: ', conf['usbgroups'][user][usbgroup]['vmid'])
+    print( u'network: ', conf['usbgroups'][user][usbgroup]['network'])
+    print( u'usb:' )
+    for usb in conf['usbgroups'][user][usbgroup]['usb']:
+        print("- " + usb)
  
 def detach_usbgroup(user, usbgroup):
 
-    logging.info( u'Detaching tokens' )
+    logging.info( u'Detaching usbgroup' )
 
 set_logging()
 set_socket()
