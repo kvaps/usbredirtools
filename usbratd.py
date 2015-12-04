@@ -6,6 +6,7 @@ import sys
 import logging
 import argparse
 import socket
+import json
 
 parser = argparse.ArgumentParser(description=u'usbrat server (USBRedir ATtach) - attach and detach requested usbgroups to vm\'s ')
 
@@ -41,33 +42,33 @@ def set_socket():
         logging.info( u'Connected ' + str(addr) )
         data = conn.recv(1024)
         data = data.decode("utf-8")
-
         logging.debug( u'Received ' + data )
-        action, user, usbgroup = data.split(':',2)
-        exec_usbgroup(action, user, usbgroup)
+        data = json.loads(data)
+
+        exec_usbgroup(data)
         
         logging.debug( u'Closing ' + str(addr) )
         conn.close()
 
 
-def exec_usbgroup(action, req_user, req_usbgroup):
+def exec_usbgroup(data):
     user_found = False
     usbgroup_found = False
 
     for user in conf['usbgroups']:
-        if user == req_user:
+        if user == data['user']:
             user_found = True
             for usbgroup in conf['usbgroups'][user]:
-                if usbgroup == req_usbgroup:
+                if usbgroup == data['usbgroup']:
                     usbgroup_found = True
-                    if action == 'A':
+                    if data['action'] == 'attach':
                         attach_usbgroup(user, usbgroup)
-                    elif action == 'D':
+                    elif data['action'] == 'detach':
                         detach_usbgroup(user, usbgroup)
     if user_found == False:
-        logging.info( u'No user found: ' + req_user )
+        logging.info( u'No user found: ' + data['user'] )
     elif usbgroup_found == False:
-            logging.info( u'No usbgroup found for ' +req_user + ': ' + req_usbgroup )
+            logging.info( u'No usbgroup found for ' +data['user'] + ': ' + data['usbgroup'] )
             
 def attach_usbgroup(user, usbgroup):
     logging.info( u'Attaching usbgroup' )

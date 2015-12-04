@@ -5,7 +5,7 @@ import sys
 import logging
 import argparse
 import socket
-
+import json
 
 parser = argparse.ArgumentParser(description='usbrat tool (USBRedir ATtach) - Send commands for attach usbgroup and dettach it when exit to usbrat server.')
 
@@ -33,15 +33,13 @@ def set_logging():
 
 def attach_usbgroup():
     logging.info( u'Attaching ' + options.usbgroup + ', for ' + options.user )
-    data = bytes(u'A:' + options.user + ':' + options.usbgroup , 'utf-8')
+    data = { "action": "attach", "user": options.user, "usbgroup": options.usbgroup}
     send_server(data)
 
 def detach_usbgroup():
     logging.info( u'Detaching ' + options.usbgroup + ', for ' + options.user )
-    data = bytes(u'D:' + options.user + ':' + options.usbgroup , 'utf-8')
+    data = { "action": "detach", "user": options.user, "usbgroup": options.usbgroup}
     send_server(data)
-    logging.debug( u'Program exited' )
-    sys.exit(0)
 
 def int_signal_handler(signal, frame):
     logging.debug( u'INT signal received' )
@@ -55,7 +53,9 @@ def send_server(data):
     sock = socket.socket()
     sock.connect((options.host, options.port))
     logging.debug( u'Connected ' + options.host + ':' + str(options.port) )
-    logging.debug( u'Send ' + data.decode('utf-8') )
+    data = json.dumps(data)
+    logging.debug( u'Send ' + data )
+    data=bytes(data, 'utf-8')
     sock.send(data)
     result = sock.recv(1024).decode('utf-8')
     logging.info(result)
