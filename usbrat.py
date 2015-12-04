@@ -34,12 +34,12 @@ def set_logging():
 def attach_usbgroup():
     logging.info( u'Attaching ' + options.usbgroup + ', for ' + options.user )
     data = { "action": "attach", "user": options.user, "usbgroup": options.usbgroup}
-    send_server(data)
+    connect_server(data)
 
 def detach_usbgroup():
     logging.info( u'Detaching ' + options.usbgroup + ', for ' + options.user )
     data = { "action": "detach", "user": options.user, "usbgroup": options.usbgroup}
-    send_server(data)
+    connect_server(data)
 
 def int_signal_handler(signal, frame):
     logging.debug( u'INT signal received' )
@@ -49,7 +49,7 @@ def hup_signal_handler(signal, frame):
     logging.debug( u'HUP signal received' )
     detach_usbgroup()
 
-def send_server(data):
+def connect_server(data):
     sock = socket.socket()
     sock.connect((options.host, options.port))
     logging.debug( u'Connected ' + options.host + ':' + str(options.port) )
@@ -57,8 +57,8 @@ def send_server(data):
     logging.debug( u'Send ' + data )
     data=bytes(data, 'utf-8')
     sock.send(data)
-    result = sock.recv(1024).decode('utf-8')
-    logging.info(result)
+    data = sock.recv(1024).decode('utf-8')
+    logging.debug( u'Received ' + data )
     sock.close()
 
 

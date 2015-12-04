@@ -7,6 +7,7 @@ import logging
 import argparse
 import socket
 import json
+import uuid
 
 parser = argparse.ArgumentParser(description=u'usbrat server (USBRedir ATtach) - attach and detach requested usbgroups to vm\'s ')
 
@@ -51,9 +52,21 @@ def set_socket():
         conn.close()
 
 
+def check_usbgroup(user, usbgroup):
+    logging.debug( u'Checking ' + usbgroup + ', for ' + user )
+    
+    result = {'attached': None}
+    #result = {'attached': True, 'vmid': 123 }
+
+    result = json.dumps(result)
+    
+    logging.debug( u'Checking result ' + usbgroup + ', for ' + user + ' ' + result)
+    return
+
 def exec_usbgroup(data):
     user_found = False
     usbgroup_found = False
+    group_attached = False
 
     for user in conf['usbgroups']:
         if user == data['user']:
@@ -61,6 +74,9 @@ def exec_usbgroup(data):
             for usbgroup in conf['usbgroups'][user]:
                 if usbgroup == data['usbgroup']:
                     usbgroup_found = True
+
+                    check=check_usbgroup(user, usbgroup)
+
                     if data['action'] == 'attach':
                         attach_usbgroup(user, usbgroup)
                     elif data['action'] == 'detach':
@@ -70,17 +86,27 @@ def exec_usbgroup(data):
     elif usbgroup_found == False:
             logging.info( u'No usbgroup found for ' +data['user'] + ': ' + data['usbgroup'] )
             
+def gen_name(usbgroup, usb):
+    short_uuid = str(uuid.uuid4())[:8]
+    return usbgroup + '_' + usb + '_' + short_uuid
+
 def attach_usbgroup(user, usbgroup):
-    logging.info( u'Attaching usbgroup' )
-    print( u'vmid: ', conf['usbgroups'][user][usbgroup]['vmid'])
-    print( u'network: ', conf['usbgroups'][user][usbgroup]['network'])
-    print( u'usb:' )
-    for usb in conf['usbgroups'][user][usbgroup]['usb']:
-        print("- " + usb)
+
+    logging.info( u'Attaching ' + usbgroup + ', for ' + user )
+
+    vmid = conf['usbgroups'][user][usbgroup]['vmid']
+    network = conf['usbgroups'][user][usbgroup]['network']
+    usbs = conf['usbgroups'][user][usbgroup]['usb']
+
+    logging.debug( u'Connecting to vmid: ' + str(vmid))
+
+    for usb in usbs:
+        name=gen_name(usbgroup, usb)
+        logging.info( u'Attaching ' + usb + u' as ' + name)
  
 def detach_usbgroup(user, usbgroup):
 
-    logging.info( u'Detaching usbgroup' )
+    logging.info( u'Detaching ' + usbgroup + ', for ' + user )
 
 set_logging()
 set_socket()
