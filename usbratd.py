@@ -48,23 +48,26 @@ def set_socket():
         conn.close()
 
 
-def check_usbgroup(user, usbgroup):
-    logging.debug( u'Checking ' + usbgroup + ', for ' + user )
-    
-    usbs = conf['usbgroups'][user][usbgroup]['usb']
+def check_usb(usb):
 
-    for usb in usbs:
-        with open(options.data + '/usb/' + usb, 'r') as stream:
-            result = json.load(stream)
+    usbinfo_file = options.data + '/usb/' + usb
 
-    print(result)
-    #logging.debug( u'Checking result ' + usbgroup + ', for ' + user + ' ' + result)
-    return
+    if os.path.isfile(usbinfo_file):
+        with open( usbinfo_file ) as stream:
+            usbinfo = json.load(stream)
+        usbinfo['state'] = True
+
+    else:
+        usbinfo = {}
+        usbinfo['state'] = False
+
+    logging.debug( u'Check ' + usb + ' ' + json.dumps(usbinfo))
+
+    return(usbinfo)
 
 def exec_usbgroup(data):
     user_found = False
     usbgroup_found = False
-    group_attached = False
 
     for user in conf['usbgroups']:
         if user == data['user']:
@@ -73,47 +76,58 @@ def exec_usbgroup(data):
                 if usbgroup == data['usbgroup']:
                     usbgroup_found = True
 
-                    check=check_usbgroup(user, usbgroup)
+                    vmid = conf['usbgroups'][user][usbgroup]['vmid']
+                    #network = conf['usbgroups'][user][usbgroup]['network']
+                    usbs = conf['usbgroups'][user][usbgroup]['usb']
 
                     if data['action'] == 'attach':
-                        attach_usbgroup(user, usbgroup)
+                        attach_usbgroup(user, usbgroup, vmid, usbs, True)
                     elif data['action'] == 'detach':
-                        detach_usbgroup(user, usbgroup)
+                        detach_usbgroup(user, usbgroup, vmid, usbs, True)
+
     if user_found == False:
         logging.info( u'No user found: ' + data['user'] )
     elif usbgroup_found == False:
             logging.info( u'No usbgroup found for ' +data['user'] + ': ' + data['usbgroup'] )
             
-def attach_usbgroup(user, usbgroup):
+def attach_usbgroup(user, usbgroup, vmid, usbs, checking):
 
     logging.info( u'Attaching ' + usbgroup + ', for ' + user )
 
-    vmid = conf['usbgroups'][user][usbgroup]['vmid']
-    network = conf['usbgroups'][user][usbgroup]['network']
-    usbs = conf['usbgroups'][user][usbgroup]['usb']
-
-    logging.debug( u'Connecting to vmid: ' + str(vmid))
-
     for usb in usbs:
-
         chardev_name = usbgroup + '_' + usb + '_' + str(uuid.uuid4())[:8]
         device_name = usbgroup + '_' + usb
+
+        if checking == True:
+            check=check_usb(usb)
+
+        if check['state'] == True:
+            logging.warn( u'Usb ' + usb + ' already attached to ' + str(check['vmid']) )
+            detach_usbgroup(user, usbgroup, vmid, usbs, False)
 
         # Write info about attached usb
         with open(options.data + '/usb/' + usb, 'w') as stream:
             stream.write(json.dumps({'vmid': vmid, 'chardev_name': chardev_name, 'device_name': device_name}))
 
-        logging.info( u'Attaching ' + usb + u' as ')
+        logging.info( u'Attach ' + usb)
+        print(vmid)
+        print(device_name)
+        print(chardev_name)
  
-def detach_usbgroup(user, usbgroup):
+def detach_usbgroup(user, usbgroup, vmid, usbs, checking):
 
     logging.info( u'Detaching ' + usbgroup + ', for ' + user )
 
-    vmid = conf['usbgroups'][user][usbgroup]['vmid']
-    network = conf['usbgroups'][user][usbgroup]['network']
-    usbs = conf['usbgroups'][user][usbgroup]['usb']
 
     for usb in usbs:
+        if checking == True:
+            check=check_usb(usb)
+            if check['state'] == False:
+                logging.warn( u'Usb ' + usb + ' already detached ' )
+                break
+            
+        logging.info( u'Detach ' + usb)
+
         # Remove info about attached usb
         os.remove(options.data + '/usb/' + usb)
 
