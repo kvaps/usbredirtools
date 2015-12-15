@@ -7,7 +7,6 @@ import logging
 import argparse
 import socket
 import json
-import uuid
 
 parser = argparse.ArgumentParser(description=u'usbrat server (USBRedir ATtach) - attach and detach requested usbgroups to vm\'s ')
 
@@ -81,55 +80,42 @@ def exec_usbgroup(data):
                     usbs = conf['usbgroups'][user][usbgroup]['usb']
 
                     if data['action'] == 'attach':
-                        attach_usbgroup(user, usbgroup, vmid, usbs, True)
+                        attach_usbgroup(user, usbgroup, vmid, usbs)
                     elif data['action'] == 'detach':
-                        detach_usbgroup(user, usbgroup, vmid, usbs, True)
+                        detach_usbgroup(user, usbgroup, vmid, usbs)
 
     if user_found == False:
         logging.info( u'No user found: ' + data['user'] )
     elif usbgroup_found == False:
             logging.info( u'No usbgroup found for ' +data['user'] + ': ' + data['usbgroup'] )
             
-def attach_usbgroup(user, usbgroup, vmid, usbs, checking):
+def attach_usbgroup(user, usbgroup, vmid, usbs):
 
     logging.info( u'Attaching ' + usbgroup + ', for ' + user )
 
     for usb in usbs:
-        chardev_name = usbgroup + '_' + usb + '_' + str(uuid.uuid4())[:8]
+        chardev_name = usbgroup + '_' + usb
         device_name = usbgroup + '_' + usb
 
-        if checking == True:
-            check=check_usb(usb)
+        check=check_usb(usb)
 
         if check['state'] == True:
-            logging.warn( u'Usb ' + usb + ' already attached to ' + str(check['vmid']) )
-            detach_usbgroup(user, usbgroup, vmid, usbs, False)
-
-        # Write info about attached usb
-        with open(options.data + '/usb/' + usb, 'w') as stream:
-            stream.write(json.dumps({'vmid': vmid, 'chardev_name': chardev_name, 'device_name': device_name}))
+            logging.warn( u'Usb ' + usb + u' already attached to ' + str(check['vmid']) + u', run detaching...')
+            detach_usbgroup(user, usbgroup, vmid, usbs)
 
         logging.info( u'Attach ' + usb)
         print(vmid)
         print(device_name)
         print(chardev_name)
  
-def detach_usbgroup(user, usbgroup, vmid, usbs, checking):
+def detach_usbgroup(user, usbgroup, vmid, usbs):
 
     logging.info( u'Detaching ' + usbgroup + ', for ' + user )
 
 
     for usb in usbs:
-        if checking == True:
-            check=check_usb(usb)
-            if check['state'] == False:
-                logging.warn( u'Usb ' + usb + ' already detached ' )
-                break
             
         logging.info( u'Detach ' + usb)
-
-        # Remove info about attached usb
-        os.remove(options.data + '/usb/' + usb)
 
 
 options=parser.parse_args()
