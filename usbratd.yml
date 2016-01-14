@@ -1,6 +1,7 @@
 usbgroups:
   usera:
     alpha:
+      host    : kvm1
       vmid    : 101
       network : net997
       usb     :
@@ -8,6 +9,7 @@ usbgroups:
       - 192.168.100.75:112
 
     beta:
+      host    : kvm1
       vmid    : 101
       network : net998
       usb     :
@@ -15,6 +17,7 @@ usbgroups:
       - 192.168.100.75:1141
 
     gamma:
+      host    : kvm1
       vmid    : 101
       network : net999
       usb     :
@@ -23,6 +26,7 @@ usbgroups:
 
   userb:
     delta:
+      host    : kvm2
       vmid    : 3032
       network : net601
       usb     :
@@ -32,12 +36,14 @@ usbgroups:
 
   userc:
     beta:
+      host    : kvm2
       vmid    : 1046
       network : net101
       usb     :
       - 192.168.100.75:121
       - 192.168.100.75:122
     delta:
+      host    : kvm2
       vmid    : 1046
       network : net102
       usb     :

@@ -7,6 +7,7 @@ import logging
 import argparse
 import socket
 import json
+import subprocess
 
 parser = argparse.ArgumentParser(description=u'usbrat server (USBRedir ATtach) - attach and detach requested usbgroups to vm\'s ')
 
@@ -47,24 +48,26 @@ def set_socket():
         conn.close()
 
 
-def check_usb(usb):
+def check_attached(usbgroup, host, vmid):
 
-    usbinfo_file = options.data + '/usb/' + usb
+    p = subprocess.Popen(["ssh", host, "qm monitor", str(vmid)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
 
-    if os.path.isfile(usbinfo_file):
-        with open( usbinfo_file ) as stream:
-            usbinfo = json.load(stream)
-        usbinfo['state'] = True
+    p.stdin.write(b'info chardev')
+    output = p.communicate()[0].decode('utf-8').split('\n')
 
-    else:
-        usbinfo = {}
-        usbinfo['state'] = False
+    result = False
+    for line in output:
+        if 'filename=tcp' in line:
+            if usbgroup in line:
+                result = True
+                break
 
-    logging.debug( u'Check ' + usb + ' ' + json.dumps(usbinfo))
+    logging.debug( u'Check if ' + usbgroup + ' usbgroup already attached. Result: ' + str(result))
 
-    return(usbinfo)
+    return(result)
 
 def exec_usbgroup(data):
+
     user_found = False
     usbgroup_found = False
 
@@ -75,40 +78,40 @@ def exec_usbgroup(data):
                 if usbgroup == data['usbgroup']:
                     usbgroup_found = True
 
+                    host = conf['usbgroups'][user][usbgroup]['host']
                     vmid = conf['usbgroups'][user][usbgroup]['vmid']
                     #network = conf['usbgroups'][user][usbgroup]['network']
                     usbs = conf['usbgroups'][user][usbgroup]['usb']
 
                     if data['action'] == 'attach':
-                        attach_usbgroup(user, usbgroup, vmid, usbs)
+                        attach_usbgroup(user, usbgroup, host, vmid, usbs)
                     elif data['action'] == 'detach':
-                        detach_usbgroup(user, usbgroup, vmid, usbs)
+                        detach_usbgroup(user, usbgroup, host, vmid, usbs)
 
     if user_found == False:
         logging.info( u'No user found: ' + data['user'] )
     elif usbgroup_found == False:
-            logging.info( u'No usbgroup found for ' +data['user'] + ': ' + data['usbgroup'] )
+            logging.info( u'No usbgroup found for ' + data['user'] + ': ' + data['usbgroup'] )
             
-def attach_usbgroup(user, usbgroup, vmid, usbs):
+def attach_usbgroup(user, usbgroup, host, vmid, usbs):
 
-    logging.info( u'Attaching ' + usbgroup + ', for ' + user )
+    logging.info( u'Attaching ' + usbgroup + ' usbgroup, for ' + user )
+
+    if check_attached(usbgroup, host, vmid) == True:
+        logging.warn( u'Usbgroup ' + usb + u' already attached to ' + str(check['vmid']) + u', run detaching...')
+        detach_usbgroup(user, usbgroup, host, vmid, usbs)
+
 
     for usb in usbs:
         chardev_name = usbgroup + '_' + usb
         device_name = usbgroup + '_' + usb
-
-        check=check_usb(usb)
-
-        if check['state'] == True:
-            logging.warn( u'Usb ' + usb + u' already attached to ' + str(check['vmid']) + u', run detaching...')
-            detach_usbgroup(user, usbgroup, vmid, usbs)
 
         logging.info( u'Attach ' + usb)
         print(vmid)
         print(device_name)
         print(chardev_name)
  
-def detach_usbgroup(user, usbgroup, vmid, usbs):
+def detach_usbgroup(user, usbgroup, host, vmid, usbs):
 
     logging.info( u'Detaching ' + usbgroup + ', for ' + user )
 
