@@ -40,9 +40,12 @@ def set_socket():
         data = conn.recv(1024)
         data = data.decode("utf-8")
         logging.debug( u'Received ' + data )
-        data = json.loads(data)
-
-        exec_usbgroup(data)
+        try:
+            data = json.loads(data)
+        except ValueError:
+            logging.error( u'data was not valid JSON!' )
+        else:
+            exec_usbgroup(data)
         
         logging.debug( u'Closing ' + str(addr) )
         conn.close()
@@ -67,6 +70,14 @@ def check_attached(usbgroup, host, vmid):
     return(result)
 
 def exec_usbgroup(data):
+
+    try:
+        data['user']
+        data['usbgroup']
+        data['action']
+    except KeyError:
+        logging.error( u'Input JSON format error!' )
+        return
 
     user_found = False
     usbgroup_found = False
@@ -121,13 +132,18 @@ def detach_usbgroup(user, usbgroup, host, vmid, usbs):
         logging.info( u'Detach ' + usb)
 
 
-options=parser.parse_args()
+try:
+    options=parser.parse_args()
 
-with open(options.config, 'r') as stream:
-    conf = yaml.load(stream)
-if not os.path.exists(options.data + '/usb'):
-    os.makedirs(options.data + '/usb')
+    with open(options.config, 'r') as stream:
+        conf = yaml.load(stream)
+    if not os.path.exists(options.data + '/usb'):
+        os.makedirs(options.data + '/usb')
 
-set_logging()
-set_socket()
+    set_logging()
+    set_socket()
+
+except KeyboardInterrupt:
+    logging.info( u'Exiting' )
+
 
