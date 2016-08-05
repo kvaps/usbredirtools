@@ -28,7 +28,10 @@ for i in ${chardevs[@]}; do
         'proxmox' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-id )[0-9]*') ;;
     esac
 
-    if $(qm_monitor "$VM" 'info chardev' | grep "^${CHARDEV_ID}" | grep -q 'disconnected'); then
+    CHARDEV_MONIT=$(qm_monitor "$VM" 'info chardev' | grep "^${CHARDEV_ID}")
+
+    # Check status
+    if [ -z "$CHARDEV_MONIT" ] || [ $(echo "$CHARDEV_MONIT" | grep -q 'disconnected') ]; then
         CHARDEV_STATUS='disconnected'
     else
         CHARDEV_STATUS='connected'
