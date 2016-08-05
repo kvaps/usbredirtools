@@ -53,13 +53,33 @@ for i in ${chardevs[@]}; do
             qm_monitor "$VM" "device_del $DEVICE_ID"
         fi
 
-        # Create chardev and check output for duplicate error
-        while $(qm_monitor "$VM" "chardev-add $CHARDEV" | grep -q "Duplicate ID"); do
+        # Create chardev and save output
+        CHARDEV_ADD_OUTPUT="$(
+            qm_monitor "$VM" "chardev-add $CHARDEV"
+        )"
+
+        # Check if chardev-add operation contains connection error
+        if $(echo "$CHARDEV_ADD_OUTPUT" | grep -q "Failed to connect socket"); then
+            qm_monitor "$VM" "chardev-remove $CHARDEV_ID"
+        fi
+
+        # Check if chardev-add operation contains duplucate error
+        while $(echo "$CHARDEV_ADD_OUTPUT" | grep -q "Duplicate ID"); do
             RANDOM_NUM=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c8)
             CHARDEV_ID_OLD="${CHARDEV_ID}"
             CHARDEV_ID="$(echo ${CHARDEV_ID} | sed 's/_[A-Za-z0-9]\{8\}_$//')_${RANDOM_NUM}_"
             CHARDEV=$(echo "$CHARDEV" | sed "s|id=${CHARDEV_ID_OLD}|id=${CHARDEV_ID}|")
             DEVICE=$(echo "$DEVICE" | sed -r -e "s|chardev=${CHARDEV_ID_OLD}|chardev=${CHARDEV_ID}|g")
+
+            # Create chardev and save output
+            CHARDEV_ADD_OUTPUT="$(
+                qm_monitor "$VM" "chardev-add $CHARDEV"
+            )"
+
+            # Check if chardev-add operation contains connection error
+            if $(echo "$CHARDEV_ADD_OUTPUT" | grep -q "Failed to connect socket"); then
+                qm_monitor "$VM" "chardev-remove $CHARDEV_ID"
+            fi
         done
 
         # Add usb device
