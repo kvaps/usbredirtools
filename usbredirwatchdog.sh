@@ -13,8 +13,9 @@ function qm_monitor {
 }
 
 function log {
-    echo "$1"
-    logger "$1"
+    local SCRIPTNAME=$(basename $0)
+    echo "[${SCRIPTNAME}]: $1"
+    logger "[${SCRIPTNAME}]: $1"
 }
 
 function check_and_reconnect {
@@ -44,28 +45,21 @@ function check_and_reconnect {
 
         if [ "$CHARDEV_STATUS" != "connected" ]; then
 
-            log "${CHARDEV_HOST}:${CHARDEV_PORT} is $CHARDEV_STATUS on $VM vm."
+            log "Chardev for ${CHARDEV_HOST}:${CHARDEV_PORT} is $CHARDEV_STATUS on ${VM}. Reconnecting..."
 
             DEVICE=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-device )[^ ]*'$CHARDEV_ID'[^ ]*')
             DEVICE_ID=$(echo "$DEVICE" | grep -oP '(?<=id=)[^,]*')
 
-            if [ "$CHARDEV_STATUS" == "disconected" ]; then
+            if [ "$CHARDEV_STATUS" == "disconnected" ]; then
                 # Remove usb device
                 qm_monitor "$VM" "device_del $DEVICE_ID"
             fi
 
             # Create chardev and save output
-            CHARDEV_ADD_OUTPUT="$(
-                qm_monitor "$VM" "chardev-add $CHARDEV"
-            )"
+            CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV")"
 
-            # Check if chardev-add operation contains connection error
-            if $(echo "$CHARDEV_ADD_OUTPUT" | grep -q "Failed to connect socket"); then
-                qm_monitor "$VM" "chardev-remove $CHARDEV_ID"
-            fi
-
-            # Check if chardev-add operation contains duplucate error
-            while $(echo "$CHARDEV_ADD_OUTPUT" | grep -q "Duplicate ID"); do
+            # Check if chardev-add operation return duplucate error
+            if $(echo "$CHARDEV_ADD_OUTPUT" | grep -q "Duplicate ID"); then
                 RANDOM_NUM=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c8)
                 CHARDEV_ID_OLD="${CHARDEV_ID}"
                 CHARDEV_ID="$(echo ${CHARDEV_ID} | sed 's/_[A-Za-z0-9]\{8\}_$//')_${RANDOM_NUM}_"
@@ -73,20 +67,16 @@ function check_and_reconnect {
                 DEVICE=$(echo "$DEVICE" | sed -r -e "s|chardev=${CHARDEV_ID_OLD}|chardev=${CHARDEV_ID}|g")
 
                 # Create chardev and save output
-                CHARDEV_ADD_OUTPUT="$(
-                    qm_monitor "$VM" "chardev-add $CHARDEV"
-                )"
+                CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV")"
+            fi
 
-                # Check if chardev-add operation contains connection error
-                if $(echo "$CHARDEV_ADD_OUTPUT" | grep -q "Failed to connect socket"); then
-                    qm_monitor "$VM" "chardev-remove $CHARDEV_ID"
-                fi
-            done
+            # Remove charde if chardev-add operation return error
+            if $(echo "$CHARDEV_ADD_OUTPUT" | grep -q 'Failed to connect socket\|Duplicate ID'); then
+                qm_monitor "$VM" "chardev-remove $CHARDEV_ID"
+            fi
 
             # Add usb device
             qm_monitor "$VM" "device_add $DEVICE"
-
-            log "${CHARDEV_HOST}:${CHARDEV_PORT} reconnected as $CHARDEV_ID on $VM vm."
         fi 
     done
 }
