@@ -44,7 +44,7 @@ function check_and_reconnect {
 
         if [ "$CHARDEV_STATUS" != "connected" ]; then
 
-            echo "${CHARDEV_HOST}:${CHARDEV_PORT} $CHARDEV_STATUS on $VM vm."
+            logger "${CHARDEV_HOST}:${CHARDEV_PORT} is $CHARDEV_STATUS on $VM vm."
 
             DEVICE=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-device )[^ ]*'$CHARDEV_ID'[^ ]*')
             DEVICE_ID=$(echo "$DEVICE" | grep -oP '(?<=id=)[^,]*')
@@ -86,7 +86,7 @@ function check_and_reconnect {
             # Add usb device
             qm_monitor "$VM" "device_add $DEVICE"
 
-            echo "${CHARDEV_HOST}:${CHARDEV_PORT} reconnected as $CHARDEV_ID."
+            logger "${CHARDEV_HOST}:${CHARDEV_PORT} reconnected as $CHARDEV_ID on $VM vm."
         fi 
     done
 }
