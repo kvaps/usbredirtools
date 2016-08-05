@@ -1,8 +1,3 @@
-case $1 in
-    "--proxmox" ) BACKEND='proxmox' ;;
-    *           ) BACKEND='libvirt' ;;
-esac
-
 function qm_monitor {
     local VM="$1"
     local COMMAND="$2"
@@ -15,6 +10,11 @@ function qm_monitor {
             expect -c 'log_user 0; spawn /usr/sbin/qm monitor '"$VM"'; send "'"$COMMAND"'\r"; expect "qm>"; log_user 1; expect "qm>"; log_user 0; send "quit\r"; expect eof;' | head -n -1
         ;;
     esac
+}
+
+function log {
+    echo "$1"
+    logger "$1"
 }
 
 function check_and_reconnect {
@@ -44,7 +44,7 @@ function check_and_reconnect {
 
         if [ "$CHARDEV_STATUS" != "connected" ]; then
 
-            logger "${CHARDEV_HOST}:${CHARDEV_PORT} is $CHARDEV_STATUS on $VM vm."
+            log "${CHARDEV_HOST}:${CHARDEV_PORT} is $CHARDEV_STATUS on $VM vm."
 
             DEVICE=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-device )[^ ]*'$CHARDEV_ID'[^ ]*')
             DEVICE_ID=$(echo "$DEVICE" | grep -oP '(?<=id=)[^,]*')
@@ -86,15 +86,23 @@ function check_and_reconnect {
             # Add usb device
             qm_monitor "$VM" "device_add $DEVICE"
 
-            logger "${CHARDEV_HOST}:${CHARDEV_PORT} reconnected as $CHARDEV_ID on $VM vm."
+            log "${CHARDEV_HOST}:${CHARDEV_PORT} reconnected as $CHARDEV_ID on $VM vm."
         fi 
     done
 }
 
 function loop {
     check_and_reconnect
-    sleep 30
-    loop
+    sleep $1
+    loop $1
 }
 
-loop
+# Check VE
+if hash qm 2>/dev/null
+then BACKEND='proxmox'
+else BACKEND='libvirt'
+fi
+
+# Start loop
+TIMEOUT="${1:-10}"
+loop $TIMEOUT
