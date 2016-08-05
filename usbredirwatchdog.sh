@@ -22,13 +22,15 @@ chardevs=($(ps aux | grep -oP '(?<=\-chardev )[^ ]*host=([0-9]+\.?){4}[^ ]*'))
 for i in ${chardevs[@]}; do
     CHARDEV="$i"
     CHARDEV_ID=$(echo "$CHARDEV" | grep -oP '(?<=id=)[^,]*')
+    CHARDEV_HOST=$(echo "$CHARDEV" | grep -oP '(?<=host=)[^,]*')
+    CHARDEV_PORT=$(echo "$CHARDEV" | grep -oP '(?<=port=)[0-9]*')
 
     case $BACKEND in
         'libvirt' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-name )[^ ]*') ;;
         'proxmox' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-id )[0-9]*') ;;
     esac
 
-    CHARDEV_MONIT=$(qm_monitor "$VM" 'info chardev' | grep "^${CHARDEV_ID}")
+    CHARDEV_MONIT=$(qm_monitor "$VM" 'info chardev' | grep "${CHARDEV_HOST}:${CHARDEV_PORT}")
 
     # Check status
     if [ -z "$CHARDEV_MONIT" ] || [ $(echo "$CHARDEV_MONIT" | grep -q 'disconnected') ]; then
@@ -44,23 +46,15 @@ for i in ${chardevs[@]}; do
         # Remove usb device
         qm_monitor "$VM" "device_del $DEVICE_ID"
 
-        # Create chardev and save output
-        CHARDEV_ADD_OUTPUT="(
-            qm_monitor "$VM" "chardev-add $CHARDEV"
-        )"
-
-        # Check if chardev-add operation contains duplucate error
-        if $(echo $CHARDEV_ADD_OUTPUT | grep -q "Duplicate ID"); then
-            # Increase CHARDEV and DEVICE
-            local CHARDEV_ID_NAME=$(echo "$CHARDEV_ID" | sed 's/[0-9]*$//')
-            local CHARDEV_ID_NUM=$(echo "$CHARDEV_ID" | grep -oP '[0-9]*$')
-            CHARDEV=$(echo "$CHARDEV" | sed "s|id=${CHARDEV_ID_NAME}${CHARDEV_ID_NUM}|id=${CHARDEV_ID_NAME}$((CHARDEV_ID_NUM+1))|g")
-            local DEVICE_ID_NAME=$(echo "$DEVICE_ID" | sed 's/[0-9]*$//')
-            local DEVICE_ID_NUM=$(echo "$DEVICE_ID" | grep -oP '[0-9]*$')
-            DEVICE=$(echo "$DEVICE" | sed -r -e "s|chardev=${CHARDEV_ID_NAME}${CHARDEV_ID_NUM}|chardev=${CHARDEV_ID_NAME}$((CHARDEV_ID_NUM+1))|g" \
-                                             -e "s|id=${DEVICE_ID_NAME}${DEVICE_ID_NUM}|id=${DEVICE_ID_NAME}$((DEVICE_ID_NUM+1))|g"
-            )
-        fi
+        # Create chardev and check output for duplicate error
+        unset ATTEMPT
+        while $(qm_monitor "$VM" "chardev-add $CHARDEV" | grep -q "Duplicate ID"); do
+            ATTEMPT=$((ATTEMPT+1))
+            CHARDEV_ID_OLD="${CHARDEV_ID}"
+            CHARDEV_ID="$(echo ${CHARDEV_ID} | sed 's/a'$((ATTEMPT-1))'$//')a${ATTEMPT}"
+            CHARDEV=$(echo "$CHARDEV" | sed "s|id=${CHARDEV_ID_OLD}|id=${CHARDEV_ID}|")
+            DEVICE=$(echo "$DEVICE" | sed -r -e "s|chardev=${CHARDEV_ID_OLD}|chardev=${CHARDEV_ID}|g")
+        done
 
         # Add usb device
         qm_monitor "$VM" "device_add $DEVICE"
