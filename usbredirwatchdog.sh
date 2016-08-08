@@ -59,18 +59,23 @@ function check_and_reconnect {
 
             case $BACKEND in
                 'libvirt' )
-                    CHARDEV_ID_NUM="$(($(qm_monitor "$VM" "info chardev" | grep -Po '(?<=^charredir)[0-9]+' | sort -h | tail -n1)+1))"
-                    CHARDEV_ID="charredir$CHARDEV_ID_NUM"
-
-                    # Create chardev and save output
-                    QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
-                    log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
-
                     # Add usb device
                     DEVICE_FILE="$(mktemp)"
                     echo "<redirdev bus='usb' type='tcp'><source mode='connect' host='${CHARDEV_HOST}' service='${CHARDEV_PORT}'/></redirdev>" >> "$DEVICE_FILE"
-                    VIRSH_ATTACH_DEVICE_OUTPUT="$(virsh attach-device "$VM" "$DEVICE_FILE")"
-                    log_debug "attach-device: $VIRSH_ATTACH_DEVICE_OUTPUT"
+                    VIRSH_ATTACH_DEVICE_OUTPUT="$(virsh attach-device "$VM" "$DEVICE_FILE" 2>&1)"
+
+                    # If chardev does not exist error
+                    if $(echo "$VIRSH_ATTACH_DEVICE_OUTPUT" | grep -q "Property 'usb-redir.chardev' can't find value"); then
+                        CHARDEV_ID="$(echo $VIRSH_ATTACH_DEVICE_OUTPUT | grep -Po "(?<=Property 'usb-redir.chardev' can't find value ')[^']*")"
+                        CHARDEV="socket,id=${CHARDEV_ID},host=${CHARDEV_HOST},port=${CHARDEV_PORT}"
+                        # Create chardev and save output
+                        QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
+                        log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
+                        VIRSH_ATTACH_DEVICE_OUTPUT="$(virsh attach-device "$VM" "$DEVICE_FILE" 2>&1)"
+                    fi
+                    log_debug "attach-device: ${VIRSH_ATTACH_DEVICE_OUTPUT:-OK}"
+                    rm -f $DEVICE_FILE
+
 	        ;;
                 'proxmox' )
                     if [ "$CHARDEV_STATUS" == "disconnected" ]; then
@@ -81,7 +86,6 @@ function check_and_reconnect {
 
                     # Create chardev and save output
                     QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
-                    log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
 
                     # Check if chardev-add operation return duplucate error
                     if $(echo "$QM_CHARDEV_ADD_OUTPUT" | grep -q "Duplicate ID"); then
@@ -93,8 +97,8 @@ function check_and_reconnect {
 
                         # Create chardev and save output
                         QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
-                        log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
                     fi
+                    log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
 
                     # Remove charde if chardev-add operation return error
                     if $(echo "$QM_CHARDEV_ADD_OUTPUT" | grep -q 'Failed to connect socket\|Duplicate ID'); then
