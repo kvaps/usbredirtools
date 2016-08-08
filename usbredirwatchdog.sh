@@ -57,38 +57,56 @@ function check_and_reconnect {
             DEVICE=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-device )[^ ]*'$CHARDEV_ID'[^ ]*')
             DEVICE_ID=$(echo "$DEVICE" | grep -oP '(?<=id=)[^,]*')
 
-            if [ "$CHARDEV_STATUS" == "disconnected" ]; then
-                # Remove usb device
-                QM_DEVICE_DEL_OUTPUT="$(qm_monitor "$VM" "device_del $DEVICE_ID" 2>&1)"
-                log_debug "device_del $DEVICE_ID: ${QM_DEVICE_DEL_OUTPUT:-OK}"
-            fi
+            case $BACKEND in
+                'libvirt' )
+                    CHARDEV_ID_NUM="$(($(qm_monitor "$VM" "info chardev" | grep -Po '(?<=^charredir)[0-9]+' | sort -h | tail -n1)+1))"
+                    CHARDEV_ID="charredir$CHARDEV_ID_NUM"
 
-            # Create chardev and save output
-            QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
-            log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
+                    # Create chardev and save output
+                    QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
+                    log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
 
-            # Check if chardev-add operation return duplucate error
-            if $(echo "$QM_CHARDEV_ADD_OUTPUT" | grep -q "Duplicate ID"); then
-                RANDOM_NUM=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c8)
-                CHARDEV_ID_OLD="${CHARDEV_ID}"
-                CHARDEV_ID="$(echo ${CHARDEV_ID} | sed 's/_[A-Za-z0-9]\{8\}_$//')_${RANDOM_NUM}_"
-                CHARDEV=$(echo "$CHARDEV" | sed "s|id=${CHARDEV_ID_OLD}|id=${CHARDEV_ID}|")
-                DEVICE=$(echo "$DEVICE" | sed -r -e "s|chardev=${CHARDEV_ID_OLD}|chardev=${CHARDEV_ID}|g")
+                    # Add usb device
+                    DEVICE_FILE="$(mktemp)"
+                    echo "<redirdev bus='usb' type='tcp'><source mode='connect' host='${CHARDEV_HOST}' service='${CHARDEV_PORT}'/></redirdev>" >> "$DEVICE_FILE"
+                    VIRSH_ATTACH_DEVICE_OUTPUT="$(virsh attach-device "$VM" "$DEVICE_FILE")"
+                    log_debug "attach-device: $VIRSH_ATTACH_DEVICE_OUTPUT"
+	        ;;
+                'proxmox' )
+                    if [ "$CHARDEV_STATUS" == "disconnected" ]; then
+                        # Remove usb device
+                        QM_DEVICE_DEL_OUTPUT="$(qm_monitor "$VM" "device_del $DEVICE_ID" 2>&1)"
+                        log_debug "device_del $DEVICE_ID: ${QM_DEVICE_DEL_OUTPUT:-OK}"
+                    fi
 
-                # Create chardev and save output
-                QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
-                log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
-            fi
+                    # Create chardev and save output
+                    QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
+                    log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
 
-            # Remove charde if chardev-add operation return error
-            if $(echo "$QM_CHARDEV_ADD_OUTPUT" | grep -q 'Failed to connect socket\|Duplicate ID'); then
-                QM_CHARDEV_REMOVE_OUTPUT="$(qm_monitor "$VM" "chardev-remove $CHARDEV_ID" 2>&1)"
-                log_debug "chardev-remove $CHARDEV: ${QM_CHARDEV_REMOVE_OUTPUT:-OK}"
-            fi
+                    # Check if chardev-add operation return duplucate error
+                    if $(echo "$QM_CHARDEV_ADD_OUTPUT" | grep -q "Duplicate ID"); then
+                        RANDOM_NUM=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c8)
+                        CHARDEV_ID_OLD="${CHARDEV_ID}"
+                        CHARDEV_ID="$(echo ${CHARDEV_ID} | sed 's/_[A-Za-z0-9]\{8\}_$//')_${RANDOM_NUM}_"
+                        CHARDEV=$(echo "$CHARDEV" | sed "s|id=${CHARDEV_ID_OLD}|id=${CHARDEV_ID}|")
+                        DEVICE=$(echo "$DEVICE" | sed -r -e "s|chardev=${CHARDEV_ID_OLD}|chardev=${CHARDEV_ID}|g")
 
-            # Add usb device
-            QM_DEVICE_ADD_OUTPUT="$(qm_monitor "$VM" "device_add $DEVICE" 2>&1)"
-            log_debug "device_add $DEVICE: ${QM_DEVICE_ADD_OUTPUT:-OK}"
+                        # Create chardev and save output
+                        QM_CHARDEV_ADD_OUTPUT="$(qm_monitor "$VM" "chardev-add $CHARDEV" 2>&1)"
+                        log_debug "chardev-add $CHARDEV: ${QM_CHARDEV_ADD_OUTPUT:-OK}"
+                    fi
+
+                    # Remove charde if chardev-add operation return error
+                    if $(echo "$QM_CHARDEV_ADD_OUTPUT" | grep -q 'Failed to connect socket\|Duplicate ID'); then
+                        QM_CHARDEV_REMOVE_OUTPUT="$(qm_monitor "$VM" "chardev-remove $CHARDEV_ID" 2>&1)"
+                        log_debug "chardev-remove $CHARDEV: ${QM_CHARDEV_REMOVE_OUTPUT:-OK}"
+                    fi
+
+                    # Add usb device
+                    QM_DEVICE_ADD_OUTPUT="$(qm_monitor "$VM" "device_add $DEVICE" 2>&1)"
+                    log_debug "device_add $DEVICE: ${QM_DEVICE_ADD_OUTPUT:-OK}"
+	        ;;
+            esac
         fi 
     done
 }
