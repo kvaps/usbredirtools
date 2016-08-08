@@ -1,0 +1,9 @@
+[Unit]
+Description=Usbredir Watchdog
+
+[Service]
+Restart=always
+ExecStart=/usr/local/bin/usbredirwatchdog.sh
+
+[Install]
+WantedBy=multi-user.target
