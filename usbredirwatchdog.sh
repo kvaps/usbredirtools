@@ -20,8 +20,10 @@ function log_info {
 }
 
 function log_debug {
-    echo "debug: $1"
-    logger "debug: $1"
+    if [ "$DEBUG" == true ]; then
+        echo "debug: $1"
+        logger "debug: $1"
+    fi
 }
 
 
@@ -127,7 +129,14 @@ then BACKEND='proxmox'
 else BACKEND='libvirt'
 fi
 
-# Start loop
-TIMEOUT="${1:-10}"
+# Getopts
+if [ ! -z "$2" ] && [ "$2" != '-v' ]; then
+    TIMEOUT="$2"
+    [ "$1" == '-v' ] && DEBUG=true
+elif [ ! -z "$1" ] && [ "$1" != '-v' ]; then
+    TIMEOUT="$1"
+    [ "$2" == '-v' ] && DEBUG=true
+fi
 
-loop $TIMEOUT
+# Start loop
+loop ${TIMEOUT:-10}
