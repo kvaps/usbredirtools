@@ -39,7 +39,7 @@ function check_and_reconnect {
             'proxmox' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-id )[0-9]*') ;;
         esac
 
-        CHARDEV_MONIT=$(qm_monitor "$VM" 'info chardev' | grep "${CHARDEV_HOST}:${CHARDEV_PORT}")
+        CHARDEV_MONIT="$(qm_monitor "$VM" 'info chardev' | grep "${CHARDEV_HOST}:${CHARDEV_PORT}")"
 
         # Check status
         if [ -z "$CHARDEV_MONIT" ]; then
@@ -50,7 +50,7 @@ function check_and_reconnect {
             CHARDEV_STATUS='connected'
         fi
 
-        if [ "$CHARDEV_STATUS" != "connected" ]; then
+        if [ "$CHARDEV_STATUS" != "connected" ] && $(qm_monitor "$VM" 'info status' | grep -q 'running' 2> /dev/null); then
 
             log_info "Chardev for ${CHARDEV_HOST}:${CHARDEV_PORT} is $CHARDEV_STATUS on ${VM}. Reconnecting..."
 
