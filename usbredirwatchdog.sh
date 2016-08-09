@@ -26,7 +26,6 @@ function log_debug {
     fi
 }
 
-
 function check_and_reconnect {
     chardevs=($(ps aux | grep -oP '(?<=\-chardev )[^ ]*host=([0-9]+\.?){4}[^ ]*'))
 
@@ -37,11 +36,11 @@ function check_and_reconnect {
         CHARDEV_PORT=$(echo "$CHARDEV" | grep -oP '(?<=port=)[0-9]*')
 
         case $BACKEND in
-            'libvirt' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-name )[^ ]*') ;;
-            'proxmox' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP '(?<=\-id )[0-9]*') ;;
+            'libvirt' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP -m1 '(?<=\-name )[^ ]*') ;;
+            'proxmox' ) VM=$(ps aux | grep "$CHARDEV" | grep -oP -m1 '(?<=\-id )[0-9]*') ;;
         esac
 
-        CHARDEV_MONIT="$(qm_monitor "$VM" 'info chardev' | grep "${CHARDEV_HOST}:${CHARDEV_PORT}")"
+        CHARDEV_MONIT="$(qm_monitor "$VM" 'info chardev' 2> /dev/null | grep -m1 "${CHARDEV_HOST}:${CHARDEV_PORT}")"
 
         # Check status
         if [ -z "$CHARDEV_MONIT" ]; then
@@ -52,7 +51,7 @@ function check_and_reconnect {
             CHARDEV_STATUS='connected'
         fi
 
-        if [ "$CHARDEV_STATUS" != "connected" ] && $(qm_monitor "$VM" 'info status' | grep -q 'running' 2> /dev/null); then
+        if [ "$CHARDEV_STATUS" != "connected" ] && $(qm_monitor "$VM" 'info status' 2> /dev/null| grep -q 'running'); then
 
             log_info "Chardev for ${CHARDEV_HOST}:${CHARDEV_PORT} is $CHARDEV_STATUS on ${VM}. Reconnecting..."
 
@@ -120,7 +119,7 @@ function check_and_reconnect {
                     log_debug "device_add $DEVICE: ${QM_DEVICE_ADD_OUTPUT:-OK}"
 	        ;;
             esac
-        fi 
+        fi
     done
 }
 
@@ -137,9 +136,9 @@ else BACKEND='libvirt'
 fi
 
 # Getopts
+[ "$1" == '-v' ] && DEBUG=true
 if [ ! -z "$2" ] && [ "$2" != '-v' ]; then
     TIMEOUT="$2"
-    [ "$1" == '-v' ] && DEBUG=true
 elif [ ! -z "$1" ] && [ "$1" != '-v' ]; then
     TIMEOUT="$1"
     [ "$2" == '-v' ] && DEBUG=true
