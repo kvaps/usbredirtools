@@ -61,6 +61,13 @@ function check_and_reconnect {
 
             case $BACKEND in
                 'libvirt' )
+                    if [ "$CHARDEV_STATUS" == "disconnected" ]; then
+                        # Remove usb device
+                        DEVICE_ID="$(echo $CHARDEV_MONIT | grep -Po '(?<=char)redir[0-9]+')"
+                        QM_DEVICE_DEL_OUTPUT="$(qm_monitor "$VM" "device_del $DEVICE_ID" 2>&1)"
+                        log_debug "device_del $DEVICE_ID: ${QM_DEVICE_DEL_OUTPUT:-OK}"
+                    fi
+
                     # Add usb device
                     DEVICE_FILE="$(mktemp)"
                     echo "<redirdev bus='usb' type='tcp'><source mode='connect' host='${CHARDEV_HOST}' service='${CHARDEV_PORT}'/></redirdev>" >> "$DEVICE_FILE"
