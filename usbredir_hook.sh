@@ -1,4 +1,19 @@
 #!/bin/bash
+#
+# VM_HOOK = [
+#     name      = "usbredir_connect",
+#     on        = "RUNNING",
+#     command   = "usbredir_hook.sh",
+#     arguments = "connect $ID $TEMPLATE" ]
+#
+# VM_HOOK = [
+#     name      = "usbredir_disconnect",
+#     on        = "CUSTOM",
+#     state     = "ACTIVE",
+#     lcm_state = "SAVE_SUSPEND",
+#     command   = "usbredir_hook.sh",
+#     arguments = "disconnect $ID $TEMPLATE" ]
+
 ACTION=$1
 VM=one-$2
 TEMPLATE=$3
