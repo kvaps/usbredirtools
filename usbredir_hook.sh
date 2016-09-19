@@ -13,6 +13,14 @@
 #     lcm_state = "SAVE_SUSPEND",
 #     command   = "usbredir_hook.sh",
 #     arguments = "disconnect $ID $TEMPLATE" ]
+# 
+# VM_HOOK = [
+#     name      = "usbredir_disconnect",
+#     on        = "CUSTOM",
+#     state     = "ACTIVE",
+#     lcm_state = "SAVE_MIGRATE",
+#     command   = "usbredir_hook.sh",
+#     arguments = "disconnect $ID $TEMPLATE" ]
 
 ACTION=$1
 VM=one-$2
