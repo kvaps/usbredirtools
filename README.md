@@ -3,8 +3,14 @@ usbredirtools
 These scripts help you passthrough many identical usb-devices (with the same vendorid:productid pair) for selected virtual machines, using [usbredir](http://www.spice-space.org/page/UsbRedir) protocol in daemon mode, without using spice.
 
 ## USB Server install
-  - Install **usbredirserver** and **fuser** packages, it is required
-  - `curl -o /etc/systemd/system/usbredirserver\@.service https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbredirserver%40.service`
+  - Install **usbredirserver**, **inotifywait** and **fuser** packages, it is required
+  - Install units and script:
+```bash
+curl -o /etc/systemd/system/usbredirserver\@.service https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbredirserver%40.service
+curl -o /etc/systemd/system/usbredirserver.service https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbredirserver.service
+curl -o /bin/usbredirserver.sh https://raw.githubusercontent.com/kvaps/usbredirtools/master/usbredirserver.sh
+chmod +x /bin/usbredirserver.sh
+```
   - `mkdir /var/lib/usbredirserver/`
 
 #### Export usb-devce
@@ -20,11 +26,16 @@ ATTR{serial}=="11C130317234004B"
   - `vim /etc/udev/rules.d/99-usb-serial.rules`
 ```
 # by serial number
-ACTION=="add", ATTR{serial}=="11C130317234004B", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{busnum}\\nDEV=$attr{devnum} > /var/lib/usbredirserver/$PORT; systemctl restart usbredirserver@$PORT'"
+ACTION=="add", ATTR{serial}=="11C130317234004B", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{busnum}\\nDEV=$attr{devnum} > /var/lib/usbredirserver/$PORT'"
 # by phisical port
-ACTION=="add", KERNEL=="3-2", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{busnum}\\nDEV=$attr{devnum} > /var/lib/usbredirserver/$PORT; systemctl restart usbredirserver@$PORT'"
+ACTION=="add", KERNEL=="3-2", RUN+="/bin/bash -c 'PORT=4000; echo -e BUS=$attr{busnum}\\nDEV=$attr{devnum} > /var/lib/usbredirserver/$PORT'"
 ```
   - `udevadm control --reload-rules`
+  - Start and enable usbredirserver service:
+```bash
+systemctl start usbredirserver.service
+systemctl enable usbredirserver.service
+```
 
 ## Hypervisor install (opennebula)
 
