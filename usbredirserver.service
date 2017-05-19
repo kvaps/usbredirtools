@@ -7,6 +7,8 @@ After=network.target
 Type=simple
 
 ExecStart=/bin/usbredirserver.sh
+ExecRestart=/bin/usbredirreload.sh
+ExecReload=/bin/usbredirreload.sh
 
 [Install]
 WantedBy=multi-user.target
