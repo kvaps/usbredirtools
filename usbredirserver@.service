@@ -7,7 +7,7 @@ EnvironmentFile=/var/lib/usbredirserver/%i
 
 ExecStart=/usr/sbin/usbredirserver -p %i ${BUS}-${DEV}
 
-ExecStop=/bin/bash -c 'fuser -k ${PORT}/tcp'
+ExecStop=/bin/bash -c 'fuser -k %i/tcp'
 
 [Install]
 WantedBy=multi-user.target
